@@ -1,0 +1,12 @@
+tree 4c2097bf3ce847af44ebd19d8ccdeef02c4d28a0
+parent 0ab287e7072686b121c164242f287c19b32981ae
+parent 4638e7c24da45273c70320867ba584902fcaacff
+author DennisSchiefer <shiin@gmx.de> 1333481435 +0200
+committer DennisSchiefer <shiin@gmx.de> 1333481435 +0200
+
+Merge branch 'trial/dragging' into develop
+
+Conflicts:
+	WebContent/OSRM.JSONP.js
+	WebContent/OSRM.debug.js
+	WebContent/main.html

@@ -38,7 +38,6 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include <vector>
 
 #include "Algorithms/CRC32.h"
-#include "Util/OpenMPReplacement.h"
 #include "typedefs.h"
 #include "Contractor/Contractor.h"
 #include "Contractor/EdgeBasedGraphFactory.h"

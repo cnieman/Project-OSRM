@@ -28,6 +28,8 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/regex.hpp>
 
+#include <luabind/luabind.hpp>
+
 #include <stxxl.h>
 #include "ExtractorStructs.h"
 
@@ -64,11 +66,18 @@ struct STXXLContainers {
     }
 };
 
+void LUA_print_string(const std::string & string) {
+    std::cout << "LUA: " << string << std::endl;
+}
+
 class ExtractorCallbacks{
 private:
     Settings settings;
     StringMap * stringMap;
     STXXLContainers * externalMemory;
+
+
+    lua_State *myLuaState;
 
     struct DurationContainer {
         int hours;
@@ -102,9 +111,27 @@ public:
         externalMemory = ext;
         settings = set;
         stringMap = strMap;
+
+        // Create a new lua state
+        myLuaState = luaL_newstate();
+
+        // Connect LuaBind to this lua state
+        luabind::open(myLuaState);
+
+        luabind::module(myLuaState)
+        [
+         luabind::def("print_string", LUA_print_string),
+
+         luabind::class_<_Way>("Way")
+         .def("getTag", (const std::string (_Way::*)(const std::string &))&_Way::getTag)
+        ];
+
+
+        luaL_dofile(myLuaState, "speedprofile.lua");
     }
 
     ~ExtractorCallbacks() {
+        lua_close(myLuaState);
     }
 
     /** warning: caller needs to take care of synchronization! */
@@ -140,6 +167,21 @@ public:
 
     /** warning: caller needs to take care of synchronization! */
     inline bool wayFunction(_Way &w) {
+        try {
+            if(luabind::call_function<bool>(myLuaState, "parseWay", w)) {
+                INFO("Saving for later");
+
+                //TODO: Hier way splitten und in die Datenstruk's eintragen
+            } else {
+                //Way is not interesting to us, let's forget it
+            }
+        } catch(luabind::error& e) {
+            std::string error = lua_tostring( e.state(), -1 );
+
+            ERR("LUA said: " << error);
+        } catch (exception& e) {
+            ERR("Exception: " << e.what());
+        }
 
         //Get the properties of the way.
         std::string highway( w.keyVals.Find("highway") );

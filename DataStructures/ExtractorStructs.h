@@ -112,6 +112,10 @@ struct _Way {
     bool isAccessRestricted;
     std::vector< NodeID > path;
     HashTable<std::string, std::string> keyVals;
+
+    const std::string getTag(const std::string& key) {
+        return keyVals.Find(key);
+    }
 };
 
 struct _Address {
