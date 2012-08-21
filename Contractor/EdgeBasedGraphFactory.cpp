@@ -210,7 +210,7 @@ void EdgeBasedGraphFactory::Run(const char * originalEdgeDataFilename) {
     std::queue<std::pair<NodeID, NodeID> > bfsQueue;
     std::vector<unsigned> componentsIndex(_nodeBasedGraph->GetNumberOfNodes(), UINT_MAX);
     std::vector<NodeID> vectorOfComponentSizes;
-    unsigned currentComponent = 0, sizeOfCurrentComponent = 0, settledNodes = 0;
+    unsigned currentComponent = 0, sizeOfCurrentComponent = 0;
     //put unexplorered node with parent pointer into queue
     for(NodeID node = 0, endNodes = _nodeBasedGraph->GetNumberOfNodes(); node < endNodes; ++node) {
         if(UINT_MAX == componentsIndex[node]) {
