@@ -25,8 +25,25 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include <algorithm>
 #include <limits>
 
+#include "DeallocatingVector.h"
+
 template< typename EdgeDataT>
 class DynamicGraph {
+private:
+    //Using the SFINAE
+    template <typename T>
+    class HasDeallocationIterator {
+        typedef char yes[1];
+        typedef char no[2];
+
+        template <typename C> static yes & test( typename C::deallocation_iterator* ) ;
+        template <typename C> static no & test(...);
+
+
+    public:
+        enum { value = sizeof(test<T>(0)) == sizeof(yes) };
+    };
+
     public:
         typedef EdgeDataT EdgeData;
         typedef unsigned NodeIterator;
@@ -53,12 +70,16 @@ class DynamicGraph {
             m_edges.resize( m_numNodes );
         }
         template<class ContainerT>
-        DynamicGraph( int nodes, const ContainerT &graph )
+        DynamicGraph( int nodes, ContainerT &graph )
         {
+
+            INFO("Detected deallocation iterator: " << (HasDeallocationIterator<ContainerT>::value ? "y" : "n" ));
+
             m_numNodes = nodes;
             m_numEdges = ( EdgeIterator ) graph.size();
-            m_nodes.reserve( m_numNodes );
-            m_nodes.resize( m_numNodes );
+            /*** build node array ***/
+//            m_nodes.reserve( m_numNodes );
+//            m_nodes.resize( m_numNodes );
             EdgeIterator edge = 0;
             EdgeIterator position = 0;
             for ( NodeIterator node = 0; node < m_numNodes; ++node ) {
@@ -66,19 +87,44 @@ class DynamicGraph {
                 while ( edge < m_numEdges && graph[edge].source == node ) {
                     ++edge;
                 }
-                m_nodes[node].firstEdge = position;
-                m_nodes[node].edges = edge - lastEdge;
-                position += m_nodes[node].edges;
+                Node n;
+                n.firstEdge = position;
+                n.edges = edge - lastEdge;
+//                m_nodes[node].firstEdge = position;
+//                m_nodes[node].edges = edge - lastEdge;
+                m_nodes.push_back(n);
+//                position += m_nodes[node].edges;
+                position += n.edges;
             }
-            m_edges.reserve( position * 1.1 );
-            m_edges.resize( position );
+
+            /*** build edge array ***/
+
+//            m_edges.reserve( position * 1.1 );
+//            m_edges.resize( position );
             edge = 0;
+//            if(HasDeallocationIterator<ContainerT>::value) {
+                typedef typename ContainerT::deallocation_iterator GraphIterator;
+                GraphIterator edgeIterator = graph.dbegin();
+//            } else {
+//                typedef typename ContainerT::iterator GraphIterator;
+//                GraphIterator edgeIterator = graph.begin();
+//            }
             for ( NodeIterator node = 0; node < m_numNodes; ++node ) {
                 for ( EdgeIterator i = m_nodes[node].firstEdge, e = m_nodes[node].firstEdge + m_nodes[node].edges; i != e; ++i ) {
-                    m_edges[i].target = graph[edge].target;
-                    m_edges[i].data = graph[edge].data;
-                    GUARANTEE(graph[edge].data.distance > 0, "edge: " << edge << "(" << graph[edge].source << "," << graph[edge].target << ")=" << graph[edge].data.distance);
-                    edge++;
+//                    m_edges[i].target = graph[edge].target;
+//                    m_edges[i].data = graph[edge].data;
+//                    if(m_edges.size() < (1+i)) {
+//                        m_edges.resize( 1+((1+i) * 1.1) );
+//                    }
+                    Edge e;
+                    e.target = edgeIterator->target;
+                    e.data = edgeIterator->data;
+                    m_edges.push_back(e);
+//                    m_edges[i].target = edgeIterator->target;
+//                    m_edges[i].data = edgeIterator->data;
+//                    GUARANTEE(graph[edge].data.distance > 0, "edge: " << edge << "(" << graph[edge].source << "," << graph[edge].target << ")=" << graph[edge].data.distance);
+                    ++edge;
+                    ++edgeIterator;
                 }
             }
         }
@@ -231,8 +277,8 @@ class DynamicGraph {
         NodeIterator m_numNodes;
         EdgeIterator m_numEdges;
 
-        std::vector< Node > m_nodes;
-        std::vector< Edge > m_edges;
+        DeallocatingVector< Node > m_nodes;
+        DeallocatingVector< Edge > m_edges;
 };
 
 #endif // DYNAMICGRAPH_H_INCLUDED

@@ -118,12 +118,13 @@ public:
         // Connect LuaBind to this lua state
         luabind::open(myLuaState);
 
-        luabind::module(myLuaState)
+        luabind::module(myLuaState, "osrm")
         [
          luabind::def("print_string", LUA_print_string),
 
          luabind::class_<_Way>("Way")
          .def("getTag", (const std::string (_Way::*)(const std::string &))&_Way::getTag)
+         .def_readwrite("name", &_Way::name)
         ];
 
 
@@ -169,15 +170,15 @@ public:
     inline bool wayFunction(_Way &w) {
         try {
             if(luabind::call_function<bool>(myLuaState, "parseWay", w)) {
-                INFO("Saving for later");
-
+                INFO("Saving for later: " << w.name << ", useful: " << (w.useful ? "y" : "n"));
+                ERR("done");
                 //TODO: Hier way splitten und in die Datenstruk's eintragen
             } else {
                 //Way is not interesting to us, let's forget it
             }
         } catch(luabind::error& e) {
             std::string error = lua_tostring( e.state(), -1 );
-
+            INFO(e.what());
             ERR("LUA said: " << error);
         } catch (exception& e) {
             ERR("Exception: " << e.what());

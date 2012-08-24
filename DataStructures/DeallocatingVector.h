@@ -49,6 +49,7 @@ protected:
         ElementT * mData;
         size_t mIndex;
         std::vector<ElementT *> & mBucketList;
+
         inline void setPointerForIndex() {
             if(bucketSizeC*mBucketList.size() <= mIndex) {
                 mData = DEALLOCATION_VECTOR_NULL_PTR;
@@ -102,7 +103,9 @@ public:
 
     template<typename T2>
     DeallocatingVectorIterator(const DeallocatingVectorIterator<T2> & r) : mState(r.mState) {}
+
     DeallocatingVectorIterator(size_t idx, std::vector<ElementT *> & input_list) : mState(idx, input_list) {}
+    //DeallocatingVectorIterator(size_t idx, const std::vector<ElementT *> & input_list) : mState(idx, input_list) {}
     DeallocatingVectorIterator(const DeallocatingVectorIteratorState & r) : mState(r) {}
 
     template<typename T2>
@@ -229,6 +232,28 @@ public:
         size_t _index = size()%bucketSizeC;
         mBucketList.back()[_index] = element;
         ++mCurrentSize;
+    }
+
+    inline void reserve(const size_t new_size) const {
+        //don't do anything
+    }
+
+    inline void resize(const size_t new_size) {
+        if(new_size > mCurrentSize) {
+            while(capacity() < new_size) {
+                mBucketList.push_back(new ElementT[bucketSizeC]);
+            }
+            mCurrentSize = new_size;
+        }
+        if(new_size < mCurrentSize) {
+            size_t number_of_necessary_buckets = 1+(new_size / bucketSizeC);
+
+            for(unsigned i = number_of_necessary_buckets; i < mBucketList.size(); ++i) {
+                delete mBucketList[i];
+            }
+            mBucketList.resize(number_of_necessary_buckets);
+            mCurrentSize = new_size;
+        }
     }
 
     inline size_t size() const {
